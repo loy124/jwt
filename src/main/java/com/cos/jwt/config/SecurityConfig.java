@@ -1,10 +1,11 @@
 package com.cos.jwt.config;
 
+import com.cos.jwt.config.jwt.JwtAuthenticationFilter;
 import com.cos.jwt.filter.MyFilter1;
-import com.cos.jwt.filter.MyFilter3;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -22,6 +23,8 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
+
         return http
                 .csrf().disable()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -29,9 +32,10 @@ public class SecurityConfig {
                 .formLogin().disable()
                 .httpBasic().disable()
                 //spring 필터체인 조회하고 나서 그에 맞는 필터 적용 하기
-//                .addFilterBefore(new MyFilter3(), BasicAuthenticationFilter.class)
+                .addFilterBefore(new MyFilter1(), BasicAuthenticationFilter.class)
                 //
                 .addFilter(corsFilter) // @CrossOrigin(인증X), 필터에 등록 인증(O)
+                .addFilter(new JwtAuthenticationFilter(authenticationManager)) //AuthenticationManager -> 로그인진행필터
                 .authorizeRequests(authroize -> authroize.antMatchers("/api/v1/user/**")
                         .access("hasRole('ROLE_USER') or hasRole('ROLE_MANAGER') or hasRole('ROLE_ADMIN')")
                         .antMatchers("/api/v1/manager/**")
